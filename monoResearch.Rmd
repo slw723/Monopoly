@@ -1,0 +1,457 @@
+---
+title: "Monopoly Research"
+author: "Sidney Williams"
+date: "6/7/22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r dice}
+#checking to see if you roll a double
+check_double = function(face, double_count) {
+  if(face[1] == face[2]) {
+    double_count = double_count + 1
+    if(double_count == 3){
+      player_df[player, 2] = 11
+      assign("player_df", player_df, .GlobalEnv)
+      return(sum(face))
+    }
+    else {
+      space = player_df[player, 2] + sum(face)
+      if(space == 40) {
+        space = 40
+      }
+      else {
+        space = space %% 40
+      }
+    
+      mono_board[space, 2] = as.numeric(mono_board[space, 2] + 1)
+      player_df[player, 2] = space
+  
+      mono_graph_data = rbind(mono_graph_data, c(player_df[player, 1], mono_board[player_df[player, 2], 3], mono_board[player_df[player, 2], 4]))
+      
+      face = sample(1:6, 2, replace=TRUE)
+      check_double(face, double_count)
+    }
+  }
+  else {
+    #return the sum of the faces and go back to dice function
+    assign("mono_board", mono_board, .GlobalEnv)
+    assign("player_df", player_df, .GlobalEnv)
+    assign("mono_graph_data", mono_graph_data, .GlobalEnv)
+    return(sum(face))
+  }
+}
+
+#call this function if the player is in jail
+jail_out = function(face, jail_count) {
+  if(face[1] == face[2]){
+    movement = sum(face)
+  }else{
+    jail_count = jail_count + 1
+    #leave jail if player has already tried to get out of jail three times and was unsuccessful 
+    if(jail_count == 3) {
+      movement = sum(face)
+    }
+    return(jail_count)
+  }
+}
+#add more movement things to this function instead of check_double to let it be more organized.
+dice = function() {
+  double_count = 0
+  jail_count = 0
+  face = sample(1:6, 2, replace=TRUE)
+  
+  if(player_df[player, 2] == 11) {
+    while(jail_count < 3) {
+      jail_out(face, jail_count)
+      break
+    }
+  }
+  
+  sum_face = check_double(face, double_count)
+  return(sum_face)
+}
+```
+
+```{r}
+library(dplyr)
+#creating the community chess cards
+cc_cards = data.frame()
+cc1 = c("Advance to Go(collect $200)", 200, TRUE, "Go")
+cc2 = c("Bank error in your favor. Collect $200", 200, FALSE, NA)
+cc3 = c("Doctor's fee. Pay $50", -50, FALSE, NA)
+cc4 = c("From sale of stock you get $50", 50, FALSE, NA)
+cc5 = c("Get out of jail free", 0, FALSE, NA)
+cc6 = c("Go to jail. Go directly to jail, do not pass Go, do not collect $200", 0, TRUE, "Just Visiting")
+cc7 = c("Holiday fund matures. Receive $100", 100, FALSE, NA)
+cc8 = c("Income tax refund. Collect $20", 20, FALSE, NA)
+cc9 = c("It is your birthday. Collect $10 from every player", 0, FALSE, NA)
+cc10 = c("Life insurance matures. Collect $100", 100, FALSE, NA)
+cc11 = c("Pay hospital fees of $100", -100, FALSE, NA)
+cc12 = c("Pay school fees of $50", -50, FALSE, NA)
+cc13 = c("Receive $25 consultancy fee", -25, FALSE, NA)
+cc14 = c("You are assessed for street repair. $40 per house. $115 per hotel", 0, FALSE, NA)
+cc15 = c("You have won second prize in a beauty contest. Collect $10", 10, FALSE, NA)
+cc16 = c("You inherit $100", 100, FALSE, NA)
+
+cc_cards <- rbind(cc_cards, cc1, cc2, cc3, cc4, cc5, cc6, cc7, cc8, cc9, cc10, cc11, cc12, cc13, cc14, cc15, cc16)
+colnames(cc_cards) = c("card_description", "money_gain", "true/false", "move")
+cc_cards = transform(cc_cards, money_gain = as.numeric(money_gain))
+cc_cards_vec <- c("Advance to Go(collect $200)", "Bank error in your favor. Collect $200", "Doctor's fee. Pay $50", "From sale of stock you get $50", "Get out of jail free", "Go to jail. Go directly to jail, do not pass Go, do not collect $200", "Holiday fund matures. Receive $100", "Income tax refund. Collect $20", "It is your birthday. Collect $10 from every player", "Life insurance matures. Collect $100", "Pay hospital fees of $100", "Pay school fees of $50", "Receive $25 consultancy fee", "You are assessed for street repair. $40 per house. $115 per hotel", "You have won second prize in a beauty contest. Collect $10", "You inherit $100")
+
+#selecting a community chess card
+jail_cc = function(space) {
+  mono_board[space, 2] = as.numeric(mono_board[space, 2] + 1)
+  player_df[player, 2] = space
+  mono_graph_data = rbind(mono_graph_data, c(player_df[player, 1], mono_board[player_df[player, 2], 3], mono_board[player_df[player, 2], 4]))
+  assign("player_df",player_df, .GlobalEnv)
+  
+  r <- sample(cc_cards_vec, size = 1, replace = FALSE)
+  cat("CC...", r)
+  space = player_df[player, 2]
+  if (r == "Go to jail. Go directly to jail, do not pass Go, do not collect $200") {
+    space = 11
+  }
+  else if(r == "Advance to Go(collect $200)") {
+    space = 1
+    }
+  else {
+    space=space
+  }
+  
+  r_pos = match(r, cc_cards[,1])
+  assign("player_df", player_df, .GlobalEnv)
+  assign("mono_board", mono_board, .GlobalEnv)
+  assign("mono_graph_data", mono_graph_data, .GlobalEnv)
+  return(c(space, r_pos))
+}
+
+#creating the chance cards
+chance_cards = data.frame()
+c1 = c("Advance to Boardwalk", 0, TRUE, "Boardwalk")
+c2 = c("Advance to Go(collect $200)", 200, TRUE, "Go")
+c3 = c("Advance to Illinois Avenue. If you pass Go, collect $200", 0, TRUE, "Illinois Avenue")
+c4 = c("Advance to St. Charles Place. If you pass Go, collect $200", 0, TRUE, "St. Charles Place")
+c5 = c("Advance to the nearest Railroad. If unowned, you may buy it from the Bank. If owned, pay owner twice the rental to which they are otherwise entitled", 0, TRUE, "Railroad") #Needs to look for the nearest railroad, which it's not doing right now
+c6 = c("Advance to the nearest Railroad. If unowned, you may buy it from the Bank. If owned, pay owner twice the rental to which they are otherwise entitled", 0, TRUE, "Railroad") #Same as the previous one
+c7 = c("Advance token to the nearest Utility. If unowned, you may buy it from the Bank. If owned, throw dice and pay owner a total ten times amount thrown.", 0, TRUE, "Utility") #Same as the previous one but with utilities
+c8 = c("Bank pays you dividend of $50", 50, FALSE, NA)
+c9 = c("Get out of jail free", 0, FALSE, NA)
+c10 = c("Go back 3 spaces", 0, TRUE, "Current space minus 3")
+c11 = c("Go to jail. Go directly to jail, do not pass Go, do not collect $200", 0, TRUE, "Just Visiting")
+c12 = c("Make general repairs on all your property. For each house pay $25. For each hotel pay $100", 0, FALSE, NA)
+c13 = c("Speeding fine $15", -15, FALSE, NA)
+c14 = c("Take a trip to Reading Railroad. If you pass Go, collect $200", 0, TRUE, "Go")
+c15 = c("You have been elected Chairman of the Board. Pay each player $50", -50, FALSE, NA)
+c16 = c("Your building loan matures. Collect $150", 150, FALSE, NA)
+
+chance_cards = rbind(chance_cards, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16)
+colnames(chance_cards) = c("card_description", "money_gain", "true/false", "move")
+chance_cards = transform(chance_cards, money_gain = as.numeric(money_gain))
+
+chance_cards_vec <- c("Advance to Boardwalk", "Advance to Go(collect $200)", "Advance to Illinois Avenue. If you pass Go, collect $200", "Advance to St. Charles Place. If you pass Go, collect $200", "Advance to the nearest Railroad. If unowned, you may buy it from the Bank. If owned, pay owner twice the rental to which they are otherwise entitled", "Advance to the nearest Railroad. If unowned, you may buy it from the Bank. If owned, pay owner twice the rental to which they are otherwise entitled", "Advance token to the nearest Utility. If unowned, you may buy it from the Bank. If owned, throw dice and pay owner a total ten times amount thrown.", "Bank pays you dividend of $50", "Get out of jail free", "Go back 3 spaces", "Go to jail. Go directly to jail, do not pass Go, do not collect $200", "Make general repairs on all your property. For each house pay $25. For each hotel pay $100", "Speeding fine $15", "Take a trip to Reading Railroad. If you pass Go, collect $200", "You have been elected Chairman of the Board. Pay each player $50", "Your building loan matures. Collect $150")
+
+#selecting a chance card
+jail_c = function(space) {
+  mono_board[space, 2] = as.numeric(mono_board[space, 2] + 1)
+  player_df[player, 2] = space
+  mono_graph_data = rbind(mono_graph_data, c(player_df[player, 1], mono_board[player_df[player, 2], 3], mono_board[player_df[player, 2], 4]))
+  
+  r1 <- sample(chance_cards_vec, size = 1, replace = FALSE)
+  print(r1)
+  space = player_df[player, 2]
+  if (r1 == "Go to jail. Go directly to jail, do not pass Go, do not collect $200") {
+    space = 11
+  }
+  else if (r1 == "Advance to Boardwalk") {
+    space = 40
+  }
+  else if (r1 == "Advance to Go(collect $200)") {
+    space = 1
+  }
+  else if (r1 == "Advance to Illinois Avenue. If you pass Go, collect $200") {
+    space = 25
+  }
+  else if (r1 == "Advance to St. Charles Place. If you pass Go, collect $200") {
+    space = 12
+  }
+  else if (r1 == "Advance to the nearest Railroad. If unowned, you may buy it from the Bank. If owned, pay owner twice the rental to which they are otherwise entitled") {
+    if (space > 1 && space < 6) {
+      space = 6
+    }
+    else if (space < 16 && space > 6) {
+      space = 16
+    }
+    else if (space < 26 && space > 16) {
+      space = 26
+    }
+    else {
+      space = 36
+    }
+  }
+  else if (r1 == "Advance token to the nearest Utility. If unowned, you may buy it from the Bank. If owned, throw dice and pay owner a total ten times amount thrown.") {
+    if (space > 1 && space < 13) {
+      space = 13
+    }
+    else if (space < 29 && space > 13) {
+      space = 29
+    }
+    else {
+      space = 13
+    }
+  }
+  else if (r1 == "Go back 3 spaces") {
+    space = space - 3
+    if(space < 1){
+      space = space + 40
+    }
+  }
+  else if (r1 == "Take a trip to Reading Railroad. If you pass Go, collect $200") {
+    space = 6
+  }
+  else {
+    space=space
+  }
+  r_pos = match(r1, chance_cards[,1])
+  assign("player_df", player_df, .GlobalEnv)
+  assign("mono_board", mono_board, .GlobalEnv)
+  assign("mono_graph_data", mono_graph_data, .GlobalEnv)
+  return(c(space, r_pos))
+}
+```
+
+```{r Money}
+#establishing to money amounts to use in the function
+bank_money = 0
+parking_money = 0
+
+#adding or subtracting the money to the players total amount
+money_board = function() {
+  #checking if player lands on free parking
+  if(player_df[player, 2] == 21) {
+    free_parking()
+    bank_money = 0
+  }
+  
+  #if player is at GO add 200 to money amount
+  if(player_df[player, 2] == 1) {
+    player_df[player, 3] = player_df[player, 3] + 200
+  }
+}
+
+#adding money to player amount based on the community chess cards
+cc_money = function(space_pos){
+  r_pos = space_pos[2]
+  player_df[player, 3] = player_df[player, 3] + cc_cards[r_pos, 2]
+  if(cc_cards[r_pos, 2] < 0){
+    bank_money = bank_money - cc_cards[r_pos, 2]
+    assign("player_df", player_df, .GlobalEnv)
+  }
+  else {
+    assign("player_df", player_df, .GlobalEnv)
+  }
+}
+
+#adding money to players amount based on the chance cards
+chance_money = function(space_pos) {
+  r_pos = space_pos[2]
+  player_df[player, 3] = player_df[player, 3] + chance_cards[r_pos, 2]
+  if(chance_cards[r_pos, 2] < 0) {
+    bank_money = bank_money - chance_cards[r_pos, 2]
+    assign("player_df", player_df, .GlobalEnv)
+  }
+  else {
+    assign("player_df", player_df, .GlobalEnv)
+  }
+}
+
+#adding money amount to free parking so there is total when someone lands on that spot
+free_parking = function() {
+  if(parking_money == 0) {
+    player_df[player,3] = player_df[player, 3] + 100
+    assign("player_df", player_df, .GlobalEnv)
+    return(player_df[player, 3])
+  }
+  parking_money = parking_money + bank_money
+  player_df[player, 3] = player_df[player, 3] + parking_money
+}
+```
+
+```{r board}
+mono_board = data.frame()
+# All of the spaces on the board
+go = c("Go", 0, 200, 0, "None")
+mediterranean = c("Mediterranean Avenue", 0, 172, 0, "Purple")
+community1 = c("Community Chest1", 0, 155, 0, "Cards")
+baltic = c("Baltic Avenue", 0, 136, 0, "Purple")
+income = c("Income Tax", 0, 118, 0, "None")
+reading = c("Reading Railroad", 0, 100, 0, "Railroad")
+oriental = c("Oriental Avenue", 0, 82, 0, "Light Blue")
+chance1 = c("Chance1", 0, 64, 0, "Cards")
+vermont = c("Vermont Avenue", 0, 46, 0, "Light Blue")
+connecticut = c("Connecticut Avenue", 0, 28, 0, "Light Blue")
+just_visiting_jail = c("Just Visiting/Jail", 0, 0, 0, "None")
+charles = c("St. Charles Place", 0, 0, 28, "Pink")
+electric = c("Electric Company", 0, 0, 46, "Utilities")
+states = c("States Avenue", 0, 0, 64, "Pink")
+virginia = c("Virginia Avenue", 0, 0, 82, "Pink")
+penn_railroad = c("Pennsylvania Railroad", 0, 0, 100, "Railroad")
+james = c("St. James Place", 0, 0, 118, "Orange")
+community2 = c("Community Chest2", 0, 0, 136, "Cards")
+tennessee = c("Tennessee Avenue", 0, 0, 154, "Orange")
+new_york = c("New York Avenue", 0, 0, 172, "Orange")
+parking = c("Free Parking", 0, 0, 200, "None")
+kentucky = c("Kentucky Avenue", 0, 28, 200, "Red")
+chance2 = c("Chance2", 0, 46, 200, "Cards")
+indiana = c("Indiana Avenue", 0, 64, 200, "Red")
+illinois = c("Illinois Avenue", 0, 82, 200, "Red")
+b_o = c("B&O Railroad", 0, 100, 200, "Railroad")
+atlantic = c("Atlantic Avenue", 0, 118, 200, "Yellow")
+ventnor = c("Ventnor Avenue", 0, 136, 200, "Yellow")
+water = c("Water Works", 0, 155, 200, "Utilities")
+marvin = c("Marvin Gardens", 0, 172, 200, "Yellow")
+jail = c("Go to Jail", 0, 200, 200, "None")
+pacific = c("Pacific Avenue", 0, 200, 172, "Green")
+carolina = c("North Carolina Avenue", 0, 200, 154, "Green")
+community3 = c("Community Chest3", 0, 200, 136, "Cards")
+penn_avenue = c("Pennsylvania Avenue", 0, 200, 118, "Green")
+short = c("Short Line", 0, 200, 100, "Railroad")
+chance3 = c("Chance3", 0, 200, 82, "Cards")
+park = c("Park Place", 0, 200, 64, "Dark Blue")
+luxury = c("Luxury Tax", 0, 200, 46, "None")
+boardwalk = c("Boardwalk", 0, 200, 28, "Dark Blue")
+
+mono_board = rbind(mono_board, go, mediterranean, community1, baltic, income, reading, oriental, chance1, vermont, connecticut, just_visiting_jail, charles, electric, states, virginia, penn_railroad, james, community2, tennessee, new_york, parking, kentucky, chance2, indiana, illinois, b_o, atlantic, ventnor, water, marvin, jail, pacific, carolina, community3, penn_avenue, short, chance3, park, luxury, boardwalk)
+colnames(mono_board) = c('space_name', 'count', 'x_dimension', 'y_dimension', 'space_color')
+```
+
+```{r}
+mono_board = transform(mono_board, x_dimension = as.numeric(x_dimension))
+mono_board = transform(mono_board, y_dimension = as.numeric(y_dimension))
+mono_board = transform(mono_board, count = as.numeric(count))
+```
+
+```{r turn}
+#creating a data frame with all the players variables
+player_df = data.frame()
+player1 = c("player1", 1, 1500)
+player2 = c("player2", 1, 1500)
+player3 = c("player3", 1, 1500)
+player4 = c("player4", 1, 1500)
+player_df = rbind(player_df, player1, player2, player3, player4)
+colnames(player_df) = c("name", "position", "money")
+player_df = transform(player_df, position = as.numeric(position))
+player_df = transform(player_df, money = as.numeric(money))
+num_players = nrow(player_df)
+
+#Columns: player, x-coordinate, y-coordinate
+mono_graph_data = data.frame()
+mono_graph_data = rbind(c(player_df[1, 1], mono_board[player_df[1, 2], 3], mono_board[player_df[1, 2], 4], mono_board[player_df[1, 2], 1]), 
+                        c(player_df[2, 1], mono_board[player_df[2, 2], 3], mono_board[player_df[2, 2], 4], mono_board[player_df[2, 2], 1]), 
+                        c(player_df[3, 1], mono_board[player_df[3, 2], 3], mono_board[player_df[3, 2], 4], mono_board[player_df[3, 2], 1]), 
+                        c(player_df[4, 1], mono_board[player_df[4, 2], 3], mono_board[player_df[4, 2], 4], mono_board[player_df[4, 2], 1]))
+
+colnames(mono_graph_data) = c('player', 'x_coordinate', 'y_coordinate', 'space_name')
+rounds = 1
+player = 1
+
+#moving the players to different positions based on the roll
+move = function() {
+  roll = dice()
+  space = player_df[player, 2] + roll
+  if (space == 40) {
+    space = 40
+  }
+  else {
+    space = space%%40
+  }
+  if(space == 3 || space == 18 || space == 34) {
+    space_pos = jail_cc(space)
+    cc_money(space_pos)
+  }
+  else if(space == 8 || space == 23 || space == 37) {
+    space_pos = jail_c(space)
+    chance_money(space_pos)
+  }
+  money_board()
+  assign("mono_board", mono_board, .GlobalEnv)
+  assign("player_df", player_df, .GlobalEnv)
+  assign("mono_graph_data", mono_graph_data, .GlobalEnv)
+  return(space)
+}
+
+#calling player turn so each player can move based on their roll
+player_turn = function(player) {
+  s = move()
+  mono_board[s, 2] = as.numeric(mono_board[s, 2] + 1)
+  player_df[player, 2] = s
+  
+  mono_graph_data = rbind(mono_graph_data, c(player_df[player, 1], mono_board[player_df[player, 2], 3], mono_board[player_df[player, 2], 4], mono_board[player_df[player, 2], 1]))
+  
+  return(c(assign("mono_board", mono_board, .GlobalEnv), assign("player_df", player_df, .GlobalEnv), assign("mono_graph_data", mono_graph_data, .GlobalEnv)))
+}
+#the amount of rounds we want to run
+while (rounds < 20) {
+  player_turn(player)
+  cat(" Player: ", player_df[player, 1], " Position: ", mono_board[player_df[player, 2], 1], "\n")
+  if (player == num_players) {
+    player = 1
+  }
+  else {
+    player = player + 1
+  }
+  rounds = rounds + 1
+}
+```
+
+```{r image}
+library(grid)
+library(jpeg)
+library(tidyverse)
+library(ggplot2)
+library(gganimate)
+
+#creating the monopoly board to display on the board
+Sys.setenv("VROOM_CONNECTION_SIZE" = 131072 * 2)
+board_img = rasterGrob(readJPEG("monopolyboard.jpg"), 
+                       width = unit(1, "npc"), height = unit(1, "npc"))
+```
+
+```{r plot}
+#graphing the all the positions that each player lands on
+mono_graph_data = transform(mono_graph_data, x_coordinate = as.numeric(x_coordinate))
+mono_graph_data = transform(mono_graph_data, y_coordinate = as.numeric(y_coordinate))
+mono_graph = ggplot(mono_graph_data, group = "player") +
+  annotation_custom(board_img) +
+  theme(aspect.ratio = 1) +
+  scale_x_continuous(limits = c(0, 200)) +
+  scale_y_continuous(limits = c(0, 200)) +
+  geom_point(aes(x = x_coordinate, y = y_coordinate, color = player, size = 5))
+mono_graph
+```
+
+```{r count}
+#creating a bar graph with the count of each space getting landed on
+count_plot = ggplot(mono_board, aes(x = space_name, y = count), group = "space_color") +
+  geom_bar(stat = "identity", aes(fill = space_color)) +
+  coord_flip() +
+  ggtitle("Count for Each Space") +
+  ylab("Count") +
+  xlab("Space Name") +
+  labs(fill = "Type of Space")
+count_plot
+```
+
+
+Things I need to fix or work on:
+1. when you draw a card and move to a new space, it isn't saying you moved there in the print statement in the while loop.
+2. mono_graph_data should have multiple rows for one player when a player takes more than one turn(rolls doubles)
+3. mono_graph_data should have multiple rows for one player when a player draws a card and moves a space. Should show the card space it landed on and the new space it moved to. 
+
+Things I finished!
+1. Updated the syntax, so all of the code was following the same "rules"
+2. Update mono_graph_data to include the name of the space 
