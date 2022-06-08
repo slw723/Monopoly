@@ -455,6 +455,6 @@ Things I need to fix or work on:
 Things I finished!
 1. Updated the syntax, so all of the code was following the same "rules"
 2. Update mono_graph_data to include the name of the space
-3. Got it on GitHub, so I can commit changes to there
+3. Got it on GitHub, so I can commit changes to there 
 4. Rename them from jail_c and jail_cc to something else
  
