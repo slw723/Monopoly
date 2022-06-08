@@ -1,7 +1,7 @@
 ---
 title: "Monopoly Research"
 author: "Sidney Williams"
-date: "6/7/22"
+date: "6/8/22"
 output: html_document
 ---
 
@@ -104,10 +104,10 @@ cc_cards = transform(cc_cards, money_gain = as.numeric(money_gain))
 cc_cards_vec <- c("Advance to Go(collect $200)", "Bank error in your favor. Collect $200", "Doctor's fee. Pay $50", "From sale of stock you get $50", "Get out of jail free", "Go to jail. Go directly to jail, do not pass Go, do not collect $200", "Holiday fund matures. Receive $100", "Income tax refund. Collect $20", "It is your birthday. Collect $10 from every player", "Life insurance matures. Collect $100", "Pay hospital fees of $100", "Pay school fees of $50", "Receive $25 consultancy fee", "You are assessed for street repair. $40 per house. $115 per hotel", "You have won second prize in a beauty contest. Collect $10", "You inherit $100")
 
 #selecting a community chess card
-jail_cc = function(space) {
+cc_funct = function(space) {
   mono_board[space, 2] = as.numeric(mono_board[space, 2] + 1)
   player_df[player, 2] = space
-  mono_graph_data = rbind(mono_graph_data, c(player_df[player, 1], mono_board[player_df[player, 2], 3], mono_board[player_df[player, 2], 4]))
+  mono_graph_data = rbind(mono_graph_data, c(player_df[player, 1], mono_board[player_df[player, 2], 3], mono_board[player_df[player, 2], 4], mono_board[player_df[player, 2], 1]))
   assign("player_df",player_df, .GlobalEnv)
   
   r <- sample(cc_cards_vec, size = 1, replace = FALSE)
@@ -156,10 +156,10 @@ chance_cards = transform(chance_cards, money_gain = as.numeric(money_gain))
 chance_cards_vec <- c("Advance to Boardwalk", "Advance to Go(collect $200)", "Advance to Illinois Avenue. If you pass Go, collect $200", "Advance to St. Charles Place. If you pass Go, collect $200", "Advance to the nearest Railroad. If unowned, you may buy it from the Bank. If owned, pay owner twice the rental to which they are otherwise entitled", "Advance to the nearest Railroad. If unowned, you may buy it from the Bank. If owned, pay owner twice the rental to which they are otherwise entitled", "Advance token to the nearest Utility. If unowned, you may buy it from the Bank. If owned, throw dice and pay owner a total ten times amount thrown.", "Bank pays you dividend of $50", "Get out of jail free", "Go back 3 spaces", "Go to jail. Go directly to jail, do not pass Go, do not collect $200", "Make general repairs on all your property. For each house pay $25. For each hotel pay $100", "Speeding fine $15", "Take a trip to Reading Railroad. If you pass Go, collect $200", "You have been elected Chairman of the Board. Pay each player $50", "Your building loan matures. Collect $150")
 
 #selecting a chance card
-jail_c = function(space) {
+c_funct = function(space) {
   mono_board[space, 2] = as.numeric(mono_board[space, 2] + 1)
   player_df[player, 2] = space
-  mono_graph_data = rbind(mono_graph_data, c(player_df[player, 1], mono_board[player_df[player, 2], 3], mono_board[player_df[player, 2], 4]))
+  mono_graph_data = rbind(mono_graph_data, c(player_df[player, 1], mono_board[player_df[player, 2], 3], mono_board[player_df[player, 2], 4], mono_board[player_df[player, 2], 1]))
   
   r1 <- sample(chance_cards_vec, size = 1, replace = FALSE)
   print(r1)
@@ -370,11 +370,11 @@ move = function() {
     space = space%%40
   }
   if(space == 3 || space == 18 || space == 34) {
-    space_pos = jail_cc(space)
+    space_pos = cc_funct(space)
     cc_money(space_pos)
   }
   else if(space == 8 || space == 23 || space == 37) {
-    space_pos = jail_c(space)
+    space_pos = c_funct(space)
     chance_money(space_pos)
   }
   money_board()
@@ -450,8 +450,10 @@ count_plot
 Things I need to fix or work on:
 1. when you draw a card and move to a new space, it isn't saying you moved there in the print statement in the while loop.
 2. mono_graph_data should have multiple rows for one player when a player takes more than one turn(rolls doubles)
-3. mono_graph_data should have multiple rows for one player when a player draws a card and moves a space. Should show the card space it landed on and the new space it moved to. 
+3. mono_graph_data should have multiple rows for one player when a player draws a card and moves a space. Should show the card space it landed on and the new space it moved to.
 
 Things I finished!
 1. Updated the syntax, so all of the code was following the same "rules"
-2. Update mono_graph_data to include the name of the space 
+2. Update mono_graph_data to include the name of the space
+3. Got it on GitHub, so I can commit changes to there
+4. Rename them from jail_c and jail_cc to something else
