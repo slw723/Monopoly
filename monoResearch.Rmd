@@ -105,24 +105,26 @@ cc_cards_vec <- c("Advance to Go(collect $200)", "Bank error in your favor. Coll
 
 #selecting a community chess card
 cc_funct = function(space) {
-  mono_board[space, 2] = as.numeric(mono_board[space, 2] + 1)
   player_df[player, 2] = space
-  mono_graph_data = rbind(mono_graph_data, c(player_df[player, 1], mono_board[player_df[player, 2], 3], mono_board[player_df[player, 2], 4], mono_board[player_df[player, 2], 1]))
   
-  r <- sample(cc_cards_vec, size = 1, replace = FALSE)
-  print(r)
+  rand_cc <- sample(cc_cards_vec, size = 1, replace = FALSE)
+  print(rand_cc)
   space = player_df[player, 2]
-  if (r == "Go to jail. Go directly to jail, do not pass Go, do not collect $200") {
-    space = 11
-  }
-  else if(r == "Advance to Go(collect $200)") {
-    space = 1
+  if (rand_cc == "Go to jail. Go directly to jail, do not pass Go, do not collect $200" || rand_cc == "Advance to Go(collect $200)") {
+    mono_board[space, 2] = as.numeric(mono_board[space, 2] + 1)
+    mono_graph_data = rbind(mono_graph_data, c(player_df[player, 1], mono_board[player_df[player, 2], 3], mono_board[player_df[player, 2], 4], mono_board[player_df[player, 2], 1]))
+    if (rand_cc == "Go to jail. Go directly to jail, do not pass Go, do not collect $200") {
+      space = 11
     }
+    else if(rand_cc == "Advance to Go(collect $200)") {
+      space = 1
+    }
+  }
   else {
     space=space
   }
   
-  r_pos = match(r, cc_cards[,1])
+  r_pos = match(rand_cc, cc_cards[,1])
   assign("player_df", player_df, .GlobalEnv)
   assign("mono_board", mono_board, .GlobalEnv)
   assign("mono_graph_data", mono_graph_data, .GlobalEnv)
@@ -156,66 +158,68 @@ chance_cards_vec <- c("Advance to Boardwalk", "Advance to Go(collect $200)", "Ad
 
 #selecting a chance card
 c_funct = function(space) {
-  mono_board[space, 2] = as.numeric(mono_board[space, 2] + 1)
   player_df[player, 2] = space
-  mono_graph_data = rbind(mono_graph_data, c(player_df[player, 1], mono_board[player_df[player, 2], 3], mono_board[player_df[player, 2], 4], mono_board[player_df[player, 2], 1]))
   
-  r1 <- sample(chance_cards_vec, size = 1, replace = FALSE)
-  print(r1)
+  rand_c <- sample(chance_cards_vec, size = 1, replace = FALSE)
+  print(rand_c)
   space = player_df[player, 2]
-  if (r1 == "Go to jail. Go directly to jail, do not pass Go, do not collect $200") {
-    space = 11
-  }
-  else if (r1 == "Advance to Boardwalk") {
-    space = 40
-  }
-  else if (r1 == "Advance to Go(collect $200)") {
-    space = 1
-  }
-  else if (r1 == "Advance to Illinois Avenue. If you pass Go, collect $200") {
-    space = 25
-  }
-  else if (r1 == "Advance to St. Charles Place. If you pass Go, collect $200") {
-    space = 12
-  }
-  else if (r1 == "Advance to the nearest Railroad. If unowned, you may buy it from the Bank. If owned, pay owner twice the rental to which they are otherwise entitled") {
-    if (space > 1 && space < 6) {
+  if (rand_c == "Go to jail. Go directly to jail, do not pass Go, do not collect $200" || rand_c == "Advance to Boardwalk" || rand_c == "Advance to Go(collect $200)" || rand_c == "Advance to Illinois Avenue. If you pass Go, collect $200" || rand_c == "Advance to St. Charles Place. If you pass Go, collect $200" || rand_c == "Advance to the nearest Railroad. If unowned, you may buy it from the Bank. If owned, pay owner twice the rental to which they are otherwise entitled" || rand_c == "Advance token to the nearest Utility. If unowned, you may buy it from the Bank. If owned, throw dice and pay owner a total ten times amount thrown." || rand_c == "Go back 3 spaces" || rand_c == "Take a trip to Reading Railroad. If you pass Go, collect $200") {
+    mono_board[space, 2] = as.numeric(mono_board[space, 2] + 1)
+    mono_graph_data = rbind(mono_graph_data, c(player_df[player, 1], mono_board[player_df[player, 2], 3], mono_board[player_df[player, 2], 4], mono_board[player_df[player, 2], 1]))
+    if (rand_c == "Go to jail. Go directly to jail, do not pass Go, do not collect $200") {
+      space = 11
+    }
+    else if (rand_c == "Advance to Boardwalk") {
+      space = 40
+    }
+    else if (rand_c == "Advance to Go(collect $200)") {
+      space = 1
+    }
+    else if (rand_c == "Advance to Illinois Avenue. If you pass Go, collect $200") {
+      space = 25
+    }
+    else if (rand_c == "Advance to St. Charles Place. If you pass Go, collect $200") {
+      space = 12
+    }
+    else if (rand_c == "Advance to the nearest Railroad. If unowned, you may buy it from the Bank. If owned, pay owner twice the rental to which they are otherwise entitled") {
+      if (space > 1 && space < 6) {
+        space = 6
+      }
+      else if (space < 16 && space > 6) {
+        space = 16
+      }
+      else if (space < 26 && space > 16) {
+        space = 26
+      }
+      else {
+        space = 36
+      }
+    }
+    else if (rand_c == "Advance token to the nearest Utility. If unowned, you may buy it from the Bank. If owned, throw dice and pay owner a total ten times amount thrown.") {
+      if (space > 1 && space < 13) {
+        space = 13
+      }
+      else if (space < 29 && space > 13) {
+        space = 29
+      }
+      else {
+        space = 13
+      }
+    }
+    else if (rand_c == "Go back 3 spaces") {
+      space = space - 3
+      if(space < 1){
+        space = space + 40
+      }
+    }
+    else if (rand_c == "Take a trip to Reading Railroad. If you pass Go, collect $200") {
       space = 6
     }
-    else if (space < 16 && space > 6) {
-      space = 16
-    }
-    else if (space < 26 && space > 16) {
-      space = 26
-    }
-    else {
-      space = 36
-    }
-  }
-  else if (r1 == "Advance token to the nearest Utility. If unowned, you may buy it from the Bank. If owned, throw dice and pay owner a total ten times amount thrown.") {
-    if (space > 1 && space < 13) {
-      space = 13
-    }
-    else if (space < 29 && space > 13) {
-      space = 29
-    }
-    else {
-      space = 13
-    }
-  }
-  else if (r1 == "Go back 3 spaces") {
-    space = space - 3
-    if(space < 1){
-      space = space + 40
-    }
-  }
-  else if (r1 == "Take a trip to Reading Railroad. If you pass Go, collect $200") {
-    space = 6
   }
   else {
     space=space
   }
-  r_pos = match(r1, chance_cards[,1])
+  r_pos = match(rand_c, chance_cards[,1])
   assign("player_df", player_df, .GlobalEnv)
   assign("mono_board", mono_board, .GlobalEnv)
   assign("mono_graph_data", mono_graph_data, .GlobalEnv)
@@ -452,8 +456,10 @@ Things I need to fix or work on:
 1. mono_graph_data should have multiple rows for one player when a player takes more than one turn(rolls doubles)
 2. Fix pay each player $50, so the other players actually get money
 3. Change the count graph so the colors on the graph match the physical color
-4. Rename r and r1 in card functions
-5. "If you pass go, collect $200" isn't working for anything
+4. "If you pass go, collect $200" isn't working for anything
+5. Not sure if free parking will ever have more than $100 in it
+6. Make "get out of jail free" card functional
+7. Chance3 go back three spaces and lands on community chest3, but doesn't draw a community chest card. 
 
 Things I finished!
 1. Updated the syntax, so all of the code was following the same "rules"
@@ -463,4 +469,6 @@ Things I finished!
 5. when you draw a card and move to a new space, it isn't saying you moved there in the print statement in the while loop.
 6. mono_graph_data should have multiple rows for one player when a player draws a card and moves a space. Should show the card space it landed on and the new space it moved to.
 7. It's counting all of the chance spaces twice in the count
+8. Rename r and r1 in card functions
+9. Says players are going to community chest twice when it should only be once. It does this with chance too when you draw a card and you don't move to a new space. 
  
